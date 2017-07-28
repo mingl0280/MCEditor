@@ -182,6 +182,12 @@ node* NBTCoder::decodeIntArray(ull &offset)
 
 void NBTCoder::print(node* T, int d)
 {
+    //printf("\n");
+    for (int i = 0; i < d; i++)
+	printf("    ");
+    printf("{\n");
+    
+    
     for (int i = 0; i < d; i++)
 	    printf("    ");
     printf("TYPE: %s,  NAME: %s\n",
@@ -203,7 +209,12 @@ void NBTCoder::print(node* T, int d)
     default: printf("No Content"); break;
     }
     printf("\n");
-
+    
     for (node* v : T->ch)
 	print(v, d + 1);
+    
+    printf("\n");
+    for (int i = 0; i < d; i++)
+	printf("    ");
+    printf("}\n");
 }
