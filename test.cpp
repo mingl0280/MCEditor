@@ -5,13 +5,13 @@
 #include "NBTCoder.h"
 using namespace std;
 
-char buffer[M64], chunk_file[M128];
+uc buffer[M64], chunk_file[M128];
 NBTCoder coder;
 
 int file_no;
 int location[K1], timestamp[K1];
 
-void inf(char* dest, int dest_len, char* src, int src_len)
+void inf(uc* dest, int dest_len, uc* src, int src_len)
 {
     z_stream infstream;
     infstream.zalloc = Z_NULL;
@@ -30,7 +30,7 @@ void inf(char* dest, int dest_len, char* src, int src_len)
 
 int main()
 {
-    FILE* handle = fopen("r.0.0.mca", "r");
+    FILE* handle = fopen("r.0.1.mca", "r");
     
     fread(buffer, 1, K4, handle);
     for (int i = 0; i < K4; i += 4)
@@ -63,7 +63,7 @@ int main()
 
 	    string file_name = "chunk"; file_name += to_string(file_no);
 	    freopen(file_name.c_str(), "w", stdout);
-	    coder.Print(coder.Decode((char*)chunk_file));
+	    coder.Encode(coder.Decode(chunk_file), chunk_file);
 
 	    //printf("\n============================================\n");
 	    file_no++;

@@ -1,11 +1,19 @@
 #include "NBTCoder.h"
 using namespace std;
 
-node* NBTCoder::Decode(char* A)
+node* NBTCoder::Decode(uc* A)
 {
     buffer = A;
     ull offset = 0;
     return decode(offset);
+}
+
+ull NBTCoder::Encode(node* T, uc* A)
+{
+    buffer = A;
+    ull offset = 0;
+    encode(T, offset);
+    return offset;
 }
 
 void NBTCoder::Print(node* T)
@@ -13,10 +21,58 @@ void NBTCoder::Print(node* T)
     print(T, 0);
 }
 
+void NBTCoder::Clear(node* T)
+{
+    if (!T) return;
+    for (node* u : T->ch)
+        Clear(u);
+    delete(T);
+}
+
 node* NBTCoder::newNode()
 {
     return (new node);
 }
+
+node* NBTCoder::nodeWithTypeName(int type, const std::string &str)
+{
+    node* p = new node();
+    p->tag.type = type, p->tag.name = str;
+    return p;
+}
+
+void NBTCoder::setIntContent(node *T, ll x)
+{
+    switch (T->tag.type)
+    {
+    case 1: T->tag.vi = (char)x; break;
+    case 2: T->tag.vi = (short)x; break;
+    case 3: T->tag.vi = (int)x; break;
+    case 4: T->tag.vi = x; break;
+    default: break;
+    }
+}
+
+void NBTCoder::setStringContent(node* T, const string &s)
+{
+    T->tag.vs = s;
+}
+
+void NBTCoder::setByteArrayContent(node* T, uc* A, ull len)
+{
+    T->tag.va.clear();
+    for (int i = 0; i < len; i++)
+	T->tag.va.push_back(A[i]);
+}
+
+void NBTCoder::setIntArrayContent(node* T, int* A, ull len)
+{
+    T->tag.va.clear();
+    for (int i = 0; i < len; i++)
+	T->tag.va.push_back(A[i]);
+}
+
+///////////////////////////////Private Functions////////////////////////////////
 
 node* NBTCoder::decodePayload(int type, ull &offset)
 {
@@ -35,7 +91,7 @@ node* NBTCoder::decodePayload(int type, ull &offset)
         case 9: root = decodeList(offset); break;
         case 10: root = decodeCompound(offset); break;
         case 11: root = decodeIntArray(offset); break;
-        defualt: root = NULL;
+        default: root = NULL;
     }
     return root;
 }
@@ -135,6 +191,7 @@ node* NBTCoder::decodeList(ull &offset)
     node* root = newNode();
     
     int type = (char)byteToInt(buffer, offset, 1);
+    root->tag.ch_type = type;
     offset++;
     
     int len = (int)byteToInt(buffer, offset, 4);
@@ -178,6 +235,133 @@ node* NBTCoder::decodeIntArray(ull &offset)
     }
     
     return root;
+}
+
+void NBTCoder::encodePayload(node* T, ull &offset)
+{
+    switch (T->tag.type)
+    {
+    case 0: break;
+    case 1: encodeByte(T, offset); break;
+    case 2: encodeShort(T, offset); break;
+    case 3: encodeInt(T, offset); break;
+    case 4: encodeLong(T, offset); break;
+    case 5: encodeFloat(T, offset); break;
+    case 6: encodeDouble(T, offset); break;
+    case 7: encodeByteArray(T, offset); break;
+    case 8: encodeString(T, offset); break;
+    case 9: encodeList(T, offset); break;
+    case 10: encodeCompound(T, offset); break;
+    case 11: encodeIntArray(T, offset); break;
+    default: break;
+    }
+}
+
+void NBTCoder::encode(node* T, ull &offset)
+{
+    char type = T->tag.type; buffer[offset] = type; offset++;
+    int name_len = T->tag.name.length(); intToByte(name_len, buffer, offset, 2); offset += 2;
+    stringToByte(T->tag.name, buffer, offset, name_len); offset += name_len;
+
+    encodePayload(T, offset);
+}
+
+void NBTCoder::encodeByte(node* T, ull &offset)
+{
+    uc v = T->tag.vi;
+    buffer[offset] = v;//intToByte(v, buffer, offset, 1);
+    offset++;
+}
+
+void NBTCoder::encodeShort(node* T, ull &offset)
+{
+    ll v = T->tag.vi;
+    intToByte(v, buffer, offset, 2);
+    offset += 2;
+}
+
+void NBTCoder::encodeInt(node* T, ull &offset)
+{
+    ll v = T->tag.vi;
+    intToByte(v, buffer, offset, 4);
+    offset += 4;
+}
+
+void NBTCoder::encodeLong(node* T, ull &offset)
+{
+    ll v = T->tag.vi;
+    intToByte(v, buffer, offset, 8);
+    offset += 8;
+}
+
+void NBTCoder::encodeFloat(node* T, ull &offset)
+{
+    float v = T->tag.vf;
+    floatToByte(v, buffer, offset, 4);
+    offset += 4;
+}
+
+void NBTCoder::encodeDouble(node* T, ull &offset)
+{
+    double v = T->tag.vf;
+    doubleToByte(v, buffer, offset, 8);
+    offset += 8;
+}
+
+void NBTCoder::encodeByteArray(node* T, ull &offset)
+{
+    int len = T->tag.va.size();
+    intToByte(len, buffer, offset, 4);
+    offset += 4;
+
+    for (int i = 0; i < len; i++)
+    {
+	intToByte(T->tag.va[i], buffer, offset, 1);
+	offset++;
+    }
+}
+
+void NBTCoder::encodeString(node* T, ull &offset)
+{
+    us len = (us)T->tag.vs.length();
+    intToByte(len, buffer, offset, 2); offset += 2;
+
+    stringToByte(T->tag.vs, buffer, offset, len); offset += len;
+}
+
+void NBTCoder::encodeList(node* T, ull &offset)
+{
+    char type = T->tag.ch_type;
+    intToByte(type, buffer, offset, 1);
+    offset++;
+
+    int len = T->ch.size();
+    intToByte(len, buffer, offset, 4);
+    offset += 4;
+
+    for (auto v : T->ch)
+	encodePayload(v, offset);
+}
+
+void NBTCoder::encodeCompound(node* T, ull &offset)
+{
+    for (auto v : T->ch)
+	encode(v, offset);
+    intToByte(0, buffer, offset, 1);
+    offset++;
+}
+
+void NBTCoder::encodeIntArray(node* T, ull &offset)
+{
+    int len = T->tag.va.size();
+    intToByte(len, buffer, offset, 4);
+    offset += 4;
+
+    for (int x : T->tag.va)
+    {
+	intToByte(x, buffer, offset, 4);
+	offset += 4;
+    }
 }
 
 void NBTCoder::print(node* T, int d)

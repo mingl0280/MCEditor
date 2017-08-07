@@ -8,6 +8,7 @@
 //////////////////////////////MACROS & CONSTANTS///////////////////////
 
 #define K1 0x400ULL
+#define K2 0x800ULL
 #define K4 0x1000ULL
 #define M1 0x100000ULL
 #define M2 0x200000ULL
@@ -34,20 +35,54 @@ typedef unsigned short us;
 typedef unsigned char uc;
 typedef long long ll;
 
+#define TAG_END 0
+#define TAG_BYTE 1
+#define TAG_SHORT 2
+#define TAG_INT 3
+#define TAG_LONG 4
+#define TAG_FLOAT 5
+#define TAG_DOUBLE 6
+#define TAG_BYTE_ARRAY 7
+#define TAG_STRING 8
+#define TAG_LIST 9
+#define TAG_COMPOUND 10
+#define TAG_INT_ARRAY 11
+
 extern std::string TypeName[18];
 
 /////////////////////////////////FUNCTIONS//////////////////////////////
 
-//convert bytes to a integer value (big endian)
-ll byteToInt(char* buffer, ull offset, ull len);
+//reverse [offset, offset + len) in buffer
+void reverse_(uc* buffer, ull offset, ull len);
+
+//convert bytes to an integer value (big endian)
+ll byteToInt(uc* buffer, ull offset, ull len);
 
 //convert bytes to a float value (big endian)
-float byteToFloat(char* buffer, ull offset, ull len);
+float byteToFloat(uc* buffer, ull offset, ull len);
 
 //convert bytes to a double value (big endian)
-double byteToDouble(char* buffer, ull offset, ull len);
+double byteToDouble(uc* buffer, ull offset, ull len);
 
 //convert bytes to a string value ("little endian")
-std::string byteToString(char* buffer, ull offset, ull len);
+std::string byteToString(uc* buffer, ull offset, ull len);
+
+//convert an integer value to bytes (big endian)
+void intToByte(ll v, uc* buffer, ull offset, ull len);
+
+//convert a float value to bytes (big endian)
+void floatToByte(float v, uc* buffer, ull offset, ull len);
+
+//convert a double value to bytes (big endian)
+void doubleToByte(double v, uc* buffer, ull offset, ull len);
+
+//convert a string to bytes ("little endian")
+void stringToByte(const std::string &str, uc* buffer, ull offset, ull len);
+
+//decompress src into dest
+void decompress(uc *dest, ull dest_len, uc* src, ull src_len);
+
+//compress src into dest
+ull compress(uc *dest, ull dest_len, uc* src, ull src_len);
 
 #endif /* globals_h */
