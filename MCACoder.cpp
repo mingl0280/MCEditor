@@ -44,95 +44,22 @@ node* sectionWithY(node* T, int y)
     return 0;
 }
 
-/* void MCACoder::setRegion(int* B, int x_max, int z_max, int y_max,
-			 int x0, int z0, int y0)
+void MCACoder::Finalize()
 {
-    // int d = 16;
-    // for (int i = 0; i < x_max; i++)
-    // 	for (int j = 0; j < z_max; j++)
-    // 	    for (int k = 0; k < y_max; k++)
-    // 		blocks[i + d][j + d][k + d] = B[i][j][k];
-    
-    // //read surrounding blocks to re-compute skylight and blocklight
-    // for (int i = 0; i < x_max + 2 * d; i++)
-    // 	for (int j = 0; j < z_max + 2 * d; j++)
-    // 	    for (int k = 0; k < y_max + 2 * d; k++)
-    // 	    {
-    // 		if (d <= i && i < d + x_max
-    // 		    && d <= j && k < j + z_max
-    // 		    && d <= k && k < d + y_max)
-    // 		    continue; //ignore the edited region
-		
-    // 		int x = i + x0 - d, z = j + z0 - d, y = k + y0 - d;
-    // 		readBlock(x, z, y, blocks[i][j][k],
-    // 			  blocklight[i][j][k], skylight[i][j][k]);
-    // 	    }
-    // //TODO
-    // computeBlockLight(x_max + 2 * d, z_max + 2 * d, y_max + 2 * d);
-    // computeSkyLight(x_max + 2 * d, z_max + 2 * d, y_max + 2 * d);
+    writeMCA();
 }
 
-void MCACoder::computeBlockLight(int n, int m, int h)
+void MCACoder::setBlock(int x, int z, int y, const BlockInfo &info)
 {
-    // for (int i = 0; i < n; i++)
-    // 	for (int j = 0; j < t; j++)
-    // 	    for (int k = 0; k < h; k++)
-    // 		blocklight[i][j][k] = max(blocklight[i][j][k],
-    // 					  getEmission(blocks[i][j][k]));
-    // lightPropagate(blocklight, n, m, h);
-}
+    fprintf(stderr, "Setting (%d, %d, %d).\n", x, y, z);
 
-void MCACoder::computeSkyLight(int n, int m, int h)
-{
-    // for (int i = 0; i < n; i++)
-    // 	for (int j = 0; j < m; j++)
-    // 	    for (int k = h - 1; k >= 0; k--)
-    // 		if (!blocks[i][j][k])
-    // 		    skylight[i][j][k] = 15;
-    // 		else break;
-    // lightPropagate(skylight, n, m, h);
-}
-
-void MCACoder::lightPropagate(int *light, int n, int m, int h)
-{
-    // for (int i = 0; i < n; i++)
-    // 	for (int j = 0; j < m; j++)
-    // 	    for (int k = 0; k < h; k++)
-    // 		if (light[i][j][k] > 0)
-    // 		{
-    // 		    Qx.push(i); Qz.push(j); Qy.push(k);
-    // 		    while (!Qx.empty())
-    // 		    {
-    // 			int ux = Qx.front(); Qx.pop();
-    // 			int uz = Qz.front(); Qz.pop();
-    // 			int uy = Qy.front(); Qy.pop();
-    // 			for (int d = 0; d < 6; d++)
-    // 			{
-    // 			    int vx = ux + DX[d]; if (vx < 0 || vx >= n) continue;
-    // 			    int vz = uz + DZ[d]; if (vz < 0 || vz >= m) continue;
-    // 			    int vy = uy + DY[d]; if (vy < 0 || vy >= h) continue;
-    // 			    if (light[vx][vz][vy] < light[ux][uy][uz] - 1)
-    // 			    {
-    // 				light[vx][vz][vy] = light[ux][uy][uz] - 1;
-    // 				Qx.push(vx); Qz.push(vz); Qy.push(vy);
-    // 			    }
-    // 			}
-    // 		    }
-    // 		}    
-} */
-
-void MCACoder::setBlock(int x, int z, int y, int id)
-{
-    fprintf(stderr, "Setting (%d, %d, %d) to %d\n", x, y, z, id);
-    
     int chunk_x = x >> 4, chunk_z = z >> 4;
     int region_x = chunk_x >> 5, region_z = chunk_z >> 5;
-    string file_name_ = MCAFileNameXZ(region_x, region_z);
+    string file_name = MCAFileNameXZ(region_x, region_z);
     
-    loadMCA(file_name_);
+    loadMCA(file_name);
     
     int idx = (chunk_x & 31) + 32 * (chunk_z & 31);
-
     node* T = Chunk[idx];
     
     if (!T)
@@ -142,7 +69,6 @@ void MCACoder::setBlock(int x, int z, int y, int id)
 		x, z, y);
 	return;
     }
-
     
     int subsec_no = y >> 4;
     int block_x = (x & 15), block_z = (z & 15), block_y = (y & 15);
@@ -159,22 +85,78 @@ void MCACoder::setBlock(int x, int z, int y, int id)
     }
     T = childWithName(T, "Blocks");
     
-    T->tag.va[block_pos] = id;
-
-    writeMCA();
+    T->tag.va[block_pos] = info.id;
 }
 
-void MCACoder::loadMCA(const string &file_name_)
+BlockInfo MCACoder::getBlock(int x, int z, int y)
 {
-    for (int i = 0; i < K1; i++)
-	nbt_coder.Clear(Chunk[i]);
+    int chunk_x = x >> 4, chunk_z = z >> 4;
+    int region_x = chunk_x >> 5, region_z = chunk_z >> 5;
+    string file_name = MCAFileNameXZ(region_x, region_z);
+    
+    loadMCA(file_name);
+    
+    int idx = (chunk_x & 31) + 32 * (chunk_z & 31);
+    node* T = Chunk[idx];
+    
+    if (!T)
+    {
+	fprintf(stderr,
+		"Chunk that contains (%d, %d, %d) not initialized\n",
+		x, z, y);
+	return BlockInfo();
+    }
+    
+    int subsec_no = y >> 4;
+    int block_x = (x & 15), block_z = (z & 15), block_y = (y & 15);
+    int block_pos = block_y * 16 * 16 + block_z * 16 + block_x;
+
+    T = childWithName(T, "Level");
+    T = childWithName(T, "Sections");
+    T = sectionWithY(T, subsec_no);
+    if (!T)
+    {
+	fprintf(stderr,
+		"Subsection at Y = %d not initialized.\n", subsec_no);
+	return BlockInfo();
+    }
+
+    node* u;
+    u = childWithName(T, "Blocks");
+    int id = u->tag.va[block_pos];
+
+    u = childWithName(T, "BlockLight");
+    int block_light = u->tag.va[block_pos >> 1];
+    if (block_pos & 1)
+	block_light = (block_light >> 4) & 0xF;
+    else block_light = block_light & 0xF;
+
+    u = childWithName(T, "SkyLight");
+    int sky_light = u->tag.va[block_pos >> 1];
+    if (block_pos & 1)
+	sky_light = (sky_light >> 4) & 0xF;
+    else sky_light = sky_light & 0xF;
+
+    return BlockInfo(id, 0, 0, block_light, sky_light);
+}
+
+void MCACoder::loadMCA(const string &file_name)
+{
+    if (cur_file_name == file_name)
+	return;
+
+    if (cur_file_name != "")
+    {
+	writeMCA();
+        for (int i = 0; i < K1; i++)
+	    nbt_coder.Clear(Chunk[i]);
+    }
+    
     memset(Chunk, 0, sizeof(Chunk));
-    //if (file_name == file_name_)
-    //return;
     
-    file_name = file_name_;
+    cur_file_name = file_name;
     
-    FILE* handle = fopen(file_name.c_str(), "r");
+    FILE* handle = fopen(cur_file_name.c_str(), "r");
     
     fread(buffer, 1, K4, handle);
     for (int i = 0; i < K4; i += 4)
@@ -252,12 +234,13 @@ void MCACoder::writeMCA()
     for (int i = 0; i < K1; i++)
 	intToByte(timestamp[i], buffer, K4 + (i << 2), 4);
 
-    remove(file_name.c_str());
-    FILE* handle = fopen(file_name.c_str(), "w");
+    remove(cur_file_name.c_str());
+    FILE* handle = fopen(cur_file_name.c_str(), "w");
     fwrite(buffer, 1, offset, handle);
     fclose(handle);
 
-    file_name = "";
+    cur_file_name = "";
+    
 }
 
 node* MCACoder::newSubSection(int y)

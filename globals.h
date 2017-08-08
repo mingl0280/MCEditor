@@ -82,7 +82,54 @@ void stringToByte(const std::string &str, uc* buffer, ull offset, ull len);
 //decompress src into dest
 void decompress(uc *dest, ull dest_len, uc* src, ull src_len);
 
-//compress src into dest
+//compress src into dest and return the length of compressed data
 ull compress(uc *dest, ull dest_len, uc* src, ull src_len);
+
+/////////////////////////////////STRUCTs//////////////////////////////
+
+struct Pos
+{
+    int x, z, y;
+
+	Pos() {}
+	Pos(int x_, int z_, int y_):
+		x(x_), z(z_), y(y_) {};
+
+    bool operator < (const Pos &B) const
+    {
+        int ax = x >> 9, bx = B.x >> 9;
+        if (ax != bx)
+            return ax < bx;
+        else return (z >> 9) < (B.z >> 9);
+    }
+};
+
+struct BlockInfo
+{	
+	int id, add, data;
+	int block_light, sky_light;
+    
+    BlockInfo(): id(20), add(0), data(0),
+                 block_light(15), sky_light(15) {};
+    BlockInfo(int id_, int add_, int data_,
+                int block_light_, int sky_light_)
+            : id(id_), add(add_), data(data_),
+                block_light(block_light_), sky_light(sky_light_) {};
+};
+
+struct Block
+{
+    Pos position;
+    BlockInfo info;
+
+    Block() {};
+    Block(const Pos &position_, const BlockInfo &info_)
+        : position(position_), info(info_) {};
+
+    bool operator < (const Block &B) const
+    {
+        return position < B.position;
+    }
+};
 
 #endif /* globals_h */
