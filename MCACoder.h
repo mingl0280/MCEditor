@@ -8,11 +8,11 @@
 class MCACoder
 {    
 public:
-    MCACoder(): cur_file_name("") { 
+    MCACoder(): modification_saved(true), cur_file_name("") { 
         memset(Chunk, 0, sizeof(Chunk)); 
     }
     
-    void Finalize();
+    void saveModification();
 
     void setBlock(int x, int z, int y, 
                     const BlockInfo &info);
@@ -21,6 +21,7 @@ public:
     
 private:
     NBTCoder nbt_coder;
+    bool modification_saved;
 
     std::string cur_file_name;
     node* Chunk[K1 + 7];
@@ -28,11 +29,15 @@ private:
 
     int location[K1], timestamp[K1];
 
-    void loadMCA(const std::string &file_name_);
+    int loadMCA(const std::string &file_name);
 
     void writeMCA();
 
-    node* newSubSection(int y);
+    node* sectionWithY(node* T, int y);
+
+    node* newSectionWithY(int y);
+
+    void setHalfByte(node* T, int v);
 };
 
 #endif /* MCACoder_h */	

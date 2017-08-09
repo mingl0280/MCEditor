@@ -18,46 +18,33 @@ string MCAFileNameXZ(int x, int z)
     return res;
 }
 
-node* childWithName(node* T, const string &name)
+void MCACoder::saveModification()
 {
-    for (auto v : T->ch)
-	if (v->tag.name == name)
-	    return v;
-    return 0;
-}
-
-node* childWithName(node* T, const char* name)
-{
-    for (auto v : T->ch)
-	if (v->tag.name == name)
-	    return v;
-    return 0;
-}
-
-node* sectionWithY(node* T, int y)
-{
-    for (node* u : T->ch)
+    if (!modification_saved)
+        writeMCA();
+    for (int i = 0; i < K1; i++)
     {
-	node* v = childWithName(u, "Y");
-	if (v->tag.vi == y) return u;
+	    nbt_coder.Clear(Chunk[i]);
+        Chunk[i] = 0;
     }
-    return 0;
-}
-
-void MCACoder::Finalize()
-{
-    writeMCA();
+    cur_file_name = "";
+    modification_saved = true;
 }
 
 void MCACoder::setBlock(int x, int z, int y, const BlockInfo &info)
 {
-    fprintf(stderr, "Setting (%d, %d, %d).\n", x, y, z);
+    //fprintf(stderr, "Setting (%d, %d, %d).\n", x, y, z);
 
     int chunk_x = x >> 4, chunk_z = z >> 4;
     int region_x = chunk_x >> 5, region_z = chunk_z >> 5;
     string file_name = MCAFileNameXZ(region_x, region_z);
     
-    loadMCA(file_name);
+    if (loadMCA(file_name) == -1)
+    {
+	fprintf(stderr, "File %s that contains block (%d, %d, %d) does not exists.\n",
+		file_name.c_str(), x, y, z);
+	return;
+    }    
     
     int idx = (chunk_x & 31) + 32 * (chunk_z & 31);
     node* T = Chunk[idx];
@@ -70,31 +57,70 @@ void MCACoder::setBlock(int x, int z, int y, const BlockInfo &info)
 	return;
     }
     
-    int subsec_no = y >> 4;
-    int block_x = (x & 15), block_z = (z & 15), block_y = (y & 15);
-    int block_pos = block_y * 16 * 16 + block_z * 16 + block_x;
+    modification_saved = false; //
 
-    T = childWithName(T, "Level");
-    T = childWithName(T, "Sections");
-    T = sectionWithY(T, subsec_no);
+    int sec_no = y >> 4;
+    
+    T = T->childWithName("Level");
+    T = T->childWithName("Sections");
+    
+    node* T0 = T;
+    T = sectionWithY(T, sec_no);
     if (!T)
     {
-	fprintf(stderr,
-		"Subsection at Y = %d not initialized.\n", subsec_no);
-	return;
+	/*fprintf(stderr,
+		"Section at Y = %d not initialized.\n", sec_no);
+        return;*/
+	T = newSectionWithY(sec_no);
+	T0->addChild(T);
     }
-    T = childWithName(T, "Blocks");
+
+    node* u;
+    int block_x = (x & 15), block_z = (z & 15), block_y = (y & 15);
+    int block_pos = block_y * 16 * 16 + block_z * 16 + block_x;
     
-    T->tag.va[block_pos] = info.id;
+    u = T->childWithName("Blocks");
+    nbt_coder.setByteInArrayContent(u, block_pos, info.id);
+
+	u = T->childWithName("Add");
+	if (!u)
+	{
+	    u = new node(TAG_BYTE_ARRAY, "Add");
+	    u->tag.va.resize(K2);
+        T->addChild(u);
+	}
+	nbt_coder.setHalfByteInArrayContent(u, block_pos, info.add);
+
+	u = T->childWithName("Data");
+	if (!u)
+	{
+	    u = new node(TAG_BYTE_ARRAY, "Add");
+	    u->tag.va.resize(K2);
+        T->addChild(u);
+	}
+	nbt_coder.setHalfByteInArrayContent(u, block_pos, info.data);
+
+    u = T->childWithName("BlockLight");
+    nbt_coder.setHalfByteInArrayContent(u, block_pos, info.block_light);
+
+    u = T->childWithName("SkyLight");
+    nbt_coder.setHalfByteInArrayContent(u, block_pos, info.sky_light);
 }
 
 BlockInfo MCACoder::getBlock(int x, int z, int y)
 {
+    //fprintf(stderr, "Reading (%d, %d, %d).\n", x, z, y);
+
     int chunk_x = x >> 4, chunk_z = z >> 4;
     int region_x = chunk_x >> 5, region_z = chunk_z >> 5;
     string file_name = MCAFileNameXZ(region_x, region_z);
     
-    loadMCA(file_name);
+    if (loadMCA(file_name) == -1)
+    {
+	fprintf(stderr, "File %s that contains block (%d, %d, %d) does not exists.\n",
+		file_name.c_str(), x, y, z);
+	return BlockInfo();
+    }
     
     int idx = (chunk_x & 31) + 32 * (chunk_z & 31);
     node* T = Chunk[idx];
@@ -107,56 +133,54 @@ BlockInfo MCACoder::getBlock(int x, int z, int y)
 	return BlockInfo();
     }
     
-    int subsec_no = y >> 4;
-    int block_x = (x & 15), block_z = (z & 15), block_y = (y & 15);
-    int block_pos = block_y * 16 * 16 + block_z * 16 + block_x;
-
-    T = childWithName(T, "Level");
-    T = childWithName(T, "Sections");
-    T = sectionWithY(T, subsec_no);
+    int sec_no = y >> 4;
+    
+    T = T->childWithName("Level");
+    T = T->childWithName("Sections");
+    T = sectionWithY(T, sec_no);
     if (!T)
     {
-	fprintf(stderr,
-		"Subsection at Y = %d not initialized.\n", subsec_no);
+	/*fprintf(stderr,
+		"Section at Y = %d not initialized.\n", sec_no);*/
 	return BlockInfo();
     }
 
     node* u;
-    u = childWithName(T, "Blocks");
-    int id = u->tag.va[block_pos];
+    int block_x = (x & 15), block_z = (z & 15), block_y = (y & 15);
+    int block_pos = block_y * 16 * 16 + block_z * 16 + block_x;
+    
+    u = T->childWithName("Blocks");
+    int id = nbt_coder.getByteInArrayContent(u, block_pos);
 
-    u = childWithName(T, "BlockLight");
-    int block_light = u->tag.va[block_pos >> 1];
-    if (block_pos & 1)
-	block_light = (block_light >> 4) & 0xF;
-    else block_light = block_light & 0xF;
+    u = T->childWithName("Add");
+    int add = u? nbt_coder.getHalfByteInArrayContent(u, block_pos): 0;
 
-    u = childWithName(T, "SkyLight");
-    int sky_light = u->tag.va[block_pos >> 1];
-    if (block_pos & 1)
-	sky_light = (sky_light >> 4) & 0xF;
-    else sky_light = sky_light & 0xF;
+    u = T->childWithName("Data");
+    int data = u? nbt_coder.getHalfByteInArrayContent(u, block_pos): 0;
+    
+    u = T->childWithName("BlockLight");
+    int block_light = nbt_coder.getHalfByteInArrayContent(u, block_pos);
 
-    return BlockInfo(id, 0, 0, block_light, sky_light);
+    u = T->childWithName("SkyLight");
+    int sky_light = nbt_coder.getHalfByteInArrayContent(u, block_pos);
+
+    return BlockInfo(id, add, data, block_light, sky_light);
 }
 
-void MCACoder::loadMCA(const string &file_name)
+int MCACoder::loadMCA(const string &file_name)
 {
     if (cur_file_name == file_name)
-	return;
+	return 0;
+    
+    fprintf(stderr, "Loading %s...\n", file_name.c_str());
 
     if (cur_file_name != "")
-    {
-	writeMCA();
-        for (int i = 0; i < K1; i++)
-	    nbt_coder.Clear(Chunk[i]);
-    }
+	saveModification();
     
-    memset(Chunk, 0, sizeof(Chunk));
-    
+    FILE* handle = fopen(file_name.c_str(), "r");
+    if (!handle) return -1;
+
     cur_file_name = file_name;
-    
-    FILE* handle = fopen(cur_file_name.c_str(), "r");
     
     fread(buffer, 1, K4, handle);
     for (int i = 0; i < K4; i += 4)
@@ -185,7 +209,7 @@ void MCACoder::loadMCA(const string &file_name)
 	    }
 	    
 	    chunk_len = fread(buffer, 1, chunk_len, handle);	   
-
+	    
 	    decompress(chunk_buffer, sizeof(chunk_buffer), buffer, chunk_len);
 	    
 	    Chunk[i] = nbt_coder.Decode(chunk_buffer);
@@ -193,6 +217,8 @@ void MCACoder::loadMCA(const string &file_name)
 	else Chunk[i] = 0;
     
     fclose(handle);
+
+    return 0;
 }
 
 void MCACoder::writeMCA()
@@ -238,34 +264,47 @@ void MCACoder::writeMCA()
     FILE* handle = fopen(cur_file_name.c_str(), "w");
     fwrite(buffer, 1, offset, handle);
     fclose(handle);
-
-    cur_file_name = "";
-    
 }
 
-node* MCACoder::newSubSection(int y)
+node* MCACoder::sectionWithY(node* T, int y)
+{
+    for (node* u : T->ch)
+    {
+	node* v = u->childWithName("Y");
+	if (v->tag.vi == y) return u;
+    }
+    return 0; //newSectionWithY(y);
+}
+
+node* MCACoder::newSectionWithY(int y)
 {
     node* u;
-    node* T = nbt_coder.nodeWithTypeName(TAG_COMPOUND, "none");
+    node* T = new node(TAG_COMPOUND, "none");
 
-    u = nbt_coder.nodeWithTypeName(TAG_BYTE, "Y");
-    nbt_coder.setIntContent(u, y);
+    u = new node(TAG_BYTE, "Y");
+    u->tag.vi = y;
     T->addChild(u);
 
-    uc tmp[K4]; memset(tmp, 0, sizeof(tmp));
-
-    u = nbt_coder.nodeWithTypeName(TAG_BYTE_ARRAY, "Blocks");
-    nbt_coder.setByteArrayContent(u, tmp, K4);
+    u = new node(TAG_BYTE_ARRAY, "Blocks");
+    u->tag.va.resize(K4, 0);
     T->addChild(u);
 
-    u = nbt_coder.nodeWithTypeName(TAG_BYTE_ARRAY, "Add");
-    nbt_coder.setByteArrayContent(u, tmp, K2);
+/*  u = new node(TAG_BYTE_ARRAY, "Add");
+    u->tag.va.resize(K2, 0);
+    T->addChild(u);
+    */
+
+    u = new node(TAG_BYTE_ARRAY, "Data");
+    u->tag.va.resize(K2, 0);
     T->addChild(u);
 
-    u = nbt_coder.nodeWithTypeName(TAG_BYTE_ARRAY, "Data");
-    nbt_coder.setByteArrayContent(u, tmp, K2);
+    u = new node(TAG_BYTE_ARRAY, "BlockLight");
+    u->tag.va.resize(K2, 0);
     T->addChild(u);
 
+    u = new node(TAG_BYTE_ARRAY, "SkyLight");
+    u->tag.va.resize(K2, 0xFF);
+    T->addChild(u);
+    
     return T;
-	//TODO??
 }

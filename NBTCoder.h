@@ -9,19 +9,40 @@
 #include <cstring>
 #include "globals.h"
 
-struct data
+struct NBTData
 {
     int type, ch_type; std::string name;
     ll vi; double vf; std::string vs; std::vector<int> va;
-    data(): type(-1), name("none") {}
+    
+    NBTData()
+    : type(-1), ch_type(-1), name("none"), vi(0), vf(0), vs("") {
+        va.clear();
+    }
+    
+    NBTData(int type_, const char* name_)
+	:type(type_), ch_type(-1), name(name_), vi(0), vf(0), vs("") {
+        va.clear();
+    }
 };
 
 struct node
 {
-    data tag;
+    NBTData tag;
     std::list<node*> ch;
+
+    node() {}
+    node(int type_, const char* name_)
+	: tag(NBTData(type_, name_)) {}
     
     void addChild(node* u) { ch.push_back(u); }
+
+    node* childWithName(const char* name)
+    {
+        for (auto v : this->ch)
+	        if (v->tag.name == name)
+	            return v;
+        return 0;
+    }
 };
 
 class NBTCoder
@@ -32,14 +53,16 @@ public:
     void Print(node* T);
     void Clear(node* T);
 
-    node* newNode();
-    node* nodeWithTypeName(int type, const std::string &str);
-
     void setIntContent(node* T, ll x);
     void setStringContent(node* T, const std::string &s);
     void setByteArrayContent(node* T, uc* A, ull len);
     void setIntArrayContent(node* T, int* A, ull len);
-    
+
+    uc getByteInArrayContent(node* T, int idx);
+    void setByteInArrayContent(node* T, int idx, uc v);
+    uc getHalfByteInArrayContent(node* T, int idx);
+    void setHalfByteInArrayContent(node* T, int idx, uc v);
+
 private:
     uc* buffer;
 

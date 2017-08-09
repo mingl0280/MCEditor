@@ -29,18 +29,6 @@ void NBTCoder::Clear(node* T)
     delete(T);
 }
 
-node* NBTCoder::newNode()
-{
-    return (new node);
-}
-
-node* NBTCoder::nodeWithTypeName(int type, const std::string &str)
-{
-    node* p = new node();
-    p->tag.type = type, p->tag.name = str;
-    return p;
-}
-
 void NBTCoder::setIntContent(node *T, ll x)
 {
     switch (T->tag.type)
@@ -70,6 +58,32 @@ void NBTCoder::setIntArrayContent(node* T, int* A, ull len)
     T->tag.va.clear();
     for (int i = 0; i < len; i++)
 	T->tag.va.push_back(A[i]);
+}
+
+uc NBTCoder::getByteInArrayContent(node* T, int idx)
+{
+    return T->tag.va[idx];
+}
+
+void NBTCoder::setByteInArrayContent(node* T, int idx, uc v)
+{
+    T->tag.va[idx] = v;
+}
+
+uc NBTCoder::getHalfByteInArrayContent(node* T, int idx)
+{
+    uc res = T->tag.va[idx >> 1];
+    return (idx & 1)? ((res >> 4) & 0xF): (res & 0xF);
+}
+
+void NBTCoder::setHalfByteInArrayContent(node* T, int idx, uc v)
+{
+    v &= 0xF;
+    uc x = T->tag.va[idx >> 1];
+    if (idx & 1)
+        x = (x & 0xF) | (v << 4);
+    else x = (x & (0xF << 4)) | v;
+    T->tag.va[idx >> 1] = x;
 }
 
 ///////////////////////////////Private Functions////////////////////////////////
@@ -111,7 +125,7 @@ node* NBTCoder::decode(ull &offset)
 
 node* NBTCoder::decodeByte(ull &offset)
 {
-    node* root = newNode();
+    node* root = new node();
     root->tag.vi = (char)byteToInt(buffer, offset, 1);
     offset += 1;
     return root;
@@ -119,7 +133,7 @@ node* NBTCoder::decodeByte(ull &offset)
 
 node* NBTCoder::decodeShort(ull &offset)
 {
-    node* root = newNode();
+    node* root = new node();
     root->tag.vi = (short)byteToInt(buffer, offset, 2);
     offset += 2;
     return root;
@@ -127,7 +141,7 @@ node* NBTCoder::decodeShort(ull &offset)
 
 node* NBTCoder::decodeInt(ull &offset)
 {
-    node* root = newNode();
+    node* root = new node();
     root->tag.vi = (int)byteToInt(buffer, offset, 4);
     offset += 4;
     return root;
@@ -135,7 +149,7 @@ node* NBTCoder::decodeInt(ull &offset)
 
 node* NBTCoder::decodeLong(ull &offset)
 {
-    node* root = newNode();
+    node* root = new node();
     root->tag.vi = byteToInt(buffer, offset, 8);
     offset += 8;
     return root;
@@ -143,7 +157,7 @@ node* NBTCoder::decodeLong(ull &offset)
 
 node* NBTCoder::decodeFloat(ull &offset)
 {
-    node* root = newNode();
+    node* root = new node();
     root->tag.vf = byteToFloat(buffer, offset, 4);
     offset += 4;
     return root;
@@ -151,7 +165,7 @@ node* NBTCoder::decodeFloat(ull &offset)
 
 node* NBTCoder::decodeDouble(ull &offset)
 {
-    node* root = newNode();
+    node* root = new node();
     root->tag.vf = byteToDouble(buffer, offset, 8);
     offset += 8;
     return root;
@@ -159,7 +173,7 @@ node* NBTCoder::decodeDouble(ull &offset)
 
 node* NBTCoder::decodeByteArray(ull &offset)
 {
-    node* root = newNode();
+    node* root = new node();
     int len = (int)byteToInt(buffer, offset, 4);
     offset += 4;
 
@@ -175,7 +189,7 @@ node* NBTCoder::decodeByteArray(ull &offset)
 
 node* NBTCoder::decodeString(ull &offset)
 {
-    node* root = newNode();
+    node* root = new node();
 
     int len = (short)byteToInt(buffer, offset, 2);
     offset += 2;
@@ -188,7 +202,7 @@ node* NBTCoder::decodeString(ull &offset)
 
 node* NBTCoder::decodeList(ull &offset)
 {
-    node* root = newNode();
+    node* root = new node();
     
     int type = (char)byteToInt(buffer, offset, 1);
     root->tag.ch_type = type;
@@ -210,7 +224,7 @@ node* NBTCoder::decodeList(ull &offset)
 
 node* NBTCoder::decodeCompound(ull &offset)
 {
-    node* root = newNode();
+    node* root = new node();
     
     int type;
     while ((type = (char)byteToInt(buffer, offset, 1)))
@@ -222,7 +236,7 @@ node* NBTCoder::decodeCompound(ull &offset)
 
 node* NBTCoder::decodeIntArray(ull &offset)
 {
-    node* root = newNode();
+    node* root = new node();
     
     root->tag.va.clear();
     int len = (int)byteToInt(buffer, offset, 4);

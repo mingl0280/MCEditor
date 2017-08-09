@@ -52,22 +52,6 @@ string byteToString(uc* buffer, ull offset, ull len)
 //convert an integer value to bytes (big endian)
 void intToByte(ll v, uc* buffer, ull offset, ull len)
 {
-/*       if (len == 1)
-    {
-	char x = (char)v;
-	memcpy(buffer + offset, &x, len);
-    }
-    if (len == 2)
-    {
-	short x = (short)v;
-	memcpy(buffer + offset, &x, len);
-    }
-    if (len == 4)
-    {
-	int x = (int)v;
-	memcpy(buffer + offset, &x, len);
-    }
-    if (len == 8)   */
 	memcpy(buffer + offset, &v, len);
     reverse_(buffer, offset, len);
 }
@@ -130,4 +114,21 @@ ull compress(uc *dest, ull dest_len, uc* src, ull src_len)
     deflateEnd(&defstream);
 
     return len;
+}
+
+//get the opacity of block id
+int get_opacity(int id)
+{
+    switch (id)
+    {
+        case 0: return 1;
+        case 20: return 1;
+        default: return 15;
+    }
+}
+
+//get the block light of block id
+int get_block_light(int id)
+{
+    return 0;
 }

@@ -85,6 +85,12 @@ void decompress(uc *dest, ull dest_len, uc* src, ull src_len);
 //compress src into dest and return the length of compressed data
 ull compress(uc *dest, ull dest_len, uc* src, ull src_len);
 
+//get the opacity of block id
+int get_opacity(int id);
+
+//get the block light
+int get_block_light(int id);
+
 /////////////////////////////////STRUCTs//////////////////////////////
 
 struct Pos
@@ -106,13 +112,14 @@ struct Pos
 
 struct BlockInfo
 {	
-	int id, add, data;
-	int block_light, sky_light;
+	ui id, add, data;
+	ui block_light, sky_light;
     
-    BlockInfo(): id(20), add(0), data(0),
-                 block_light(15), sky_light(15) {};
-    BlockInfo(int id_, int add_, int data_,
-                int block_light_, int sky_light_)
+    BlockInfo(): id(0), add(0), data(0),
+                 block_light(0), sky_light(15) {};
+
+    BlockInfo(ui id_, ui add_, ui data_,
+                ui block_light_, ui sky_light_)
             : id(id_), add(add_), data(data_),
                 block_light(block_light_), sky_light(sky_light_) {};
 };

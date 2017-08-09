@@ -1,73 +1,29 @@
 #include <cstdio>
-#include <cstdlib>
-#include "zlib.h"
 #include "globals.h"
-#include "NBTCoder.h"
+#include "MCEditor.h"
+#include "MCACoder.h"
 using namespace std;
 
-uc buffer[M64], chunk_file[M128];
-NBTCoder coder;
-
-int file_no;
-int location[K1], timestamp[K1];
-
-void inf(uc* dest, int dest_len, uc* src, int src_len)
-{
-    z_stream infstream;
-    infstream.zalloc = Z_NULL;
-    infstream.zfree = Z_NULL;
-    infstream.opaque = Z_NULL;
-    
-    infstream.avail_in = (ui)src_len;
-    infstream.next_in = (uc*)src;
-    infstream.avail_out = (ui)dest_len;
-    infstream.next_out = (uc*)dest;
-
-    inflateInit(&infstream);
-    inflate(&infstream, Z_NO_FLUSH);
-    inflateEnd(&infstream);
-}
+MCEditor editor;
+MCACoder coder;
+int A[512][512][256] = {0}, B[512][512][256] = {0};
 
 int main()
 {
-    FILE* handle = fopen("r.0.1.mca", "r");
+    int x, y, z, id;
+    scanf("%d%d%d%d", &x, &y, &z, &id);
+
+    int x0 = x - 5, z0 = z - 5, y0 = y;
+    int x_len = 200, z_len = 200, y_len = 30;
+
+    for (int i = 0; i < x_len; i++)
+	for (int j = 0; j < z_len; j++)
+	    for (int k = 0; k < y_len; k++)
+	    {
+		    A[i][j][k] = id;
+	    }
     
-    fread(buffer, 1, K4, handle);
-    for (int i = 0; i < K4; i += 4)
-	location[i >> 2] = K4 * byteToInt(buffer, i, 3);
-    
-    fread(buffer, 1, K4, handle);
-    for (int i = 0; i < K4; i += 4)
-	timestamp[i >> 2] = K4 * byteToInt(buffer, i, 4);
-
-    file_no = 0;
-    for (int i = 0; i < K1; i++)
-	if (location[i])
-	{
-	    //printf("Chunk #%d:\n", file_no);
-	    fseek(handle, location[i], SEEK_SET);
-
-	    fread(buffer, 1, 4, handle);
-	    int chunk_len = byteToInt(buffer, 0, 4);
-	    chunk_len--;
-	    
-	    fread(buffer, 1, 1, handle);
-	    int cmpr_type = byteToInt(buffer, 0, 1);
-	    //printf("Compression Type: %d\n", cmpr_type);
-
-	    //printf("%d bytes expected, ", chunk_len);
-	    chunk_len = fread(buffer, 1, chunk_len, handle);
-	    //printf("%d bytes read\n", chunk_len);
-
-	    inf(chunk_file, M128, buffer, chunk_len);
-
-	    string file_name = "chunk"; file_name += to_string(file_no);
-	    freopen(file_name.c_str(), "w", stdout);
-	    coder.Encode(coder.Decode(chunk_file), chunk_file);
-
-	    //printf("\n============================================\n");
-	    file_no++;
-	}
+    editor.setRegion(A, B, x_len, z_len, y_len, x0, z0, y0);
     
     return 0;
-}
+}	
