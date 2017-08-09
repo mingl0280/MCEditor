@@ -6,19 +6,19 @@
 #include "NBTCoder.h"
 
 class MCACoder
-{    
+{
 public:
-    MCACoder(): modification_saved(true), cur_file_name("") { 
-        memset(Chunk, 0, sizeof(Chunk)); 
+    MCACoder(): modification_saved(true), cur_file_name("") {
+        memset(Chunk, 0, sizeof(Chunk));
     }
-    
+
     void saveModification();
 
-    void setBlock(int x, int z, int y, 
-                    const BlockInfo &info);
+    void setBlock(int x, int z, int y,
+                  const BlockInfo &info);
 
     BlockInfo getBlock(int x, int z, int y);
-    
+
 private:
     NBTCoder nbt_coder;
     bool modification_saved;
@@ -40,4 +40,4 @@ private:
     void setHalfByte(node* T, int v);
 };
 
-#endif /* MCACoder_h */	
+#endif /* MCACoder_h */

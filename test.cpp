@@ -17,13 +17,13 @@ int main()
     int x_len = 200, z_len = 200, y_len = 30;
 
     for (int i = 0; i < x_len; i++)
-	for (int j = 0; j < z_len; j++)
-	    for (int k = 0; k < y_len; k++)
-	    {
-		    A[i][j][k] = id;
-	    }
-    
+        for (int j = 0; j < z_len; j++)
+            for (int k = 0; k < y_len; k++)
+            {
+                A[i][j][k] = id;
+            }
+
     editor.setRegion(A, B, x_len, z_len, y_len, x0, z0, y0);
-    
+
     return 0;
-}	
+}

@@ -3,14 +3,14 @@
 using namespace std;
 
 std::string TypeName[18] = {"", "Byte", "Short", "Int", "Long Long",
-			   "Float", "Double", "Byte Array", "String",
-			   "List", "Compound", "Int Array"};
+                            "Float", "Double", "Byte Array", "String",
+                            "List", "Compound", "Int Array"};
 
 //reverse [offset, offset + len) in buffer
 void reverse_(uc* buffer, ull offset, ull len)
 {
     for (int i = 0; i < len - 1 - i; i++)
-	swap(buffer[offset + i], buffer[offset + len - 1 - i]);
+        swap(buffer[offset + i], buffer[offset + len - 1 - i]);
 }
 
 //convert bytes to a integer value (big endian)
@@ -52,7 +52,7 @@ string byteToString(uc* buffer, ull offset, ull len)
 //convert an integer value to bytes (big endian)
 void intToByte(ll v, uc* buffer, ull offset, ull len)
 {
-	memcpy(buffer + offset, &v, len);
+    memcpy(buffer + offset, &v, len);
     reverse_(buffer, offset, len);
 }
 
@@ -74,7 +74,7 @@ void doubleToByte(double v, uc* buffer, ull offset, ull len)
 void stringToByte(const std::string &str, uc* buffer, ull offset, ull len)
 {
     for (int i = 0; i < len; i++)
-	buffer[offset + i] = (uc)str[i];
+        buffer[offset + i] = (uc)str[i];
 }
 
 //decompress src into dest
@@ -84,7 +84,7 @@ void decompress(uc *dest, ull dest_len, uc* src, ull src_len)
     infstream.zalloc = Z_NULL;
     infstream.zfree = Z_NULL;
     infstream.opaque = Z_NULL;
-    
+
     infstream.avail_in = (ui)src_len;
     infstream.next_in = src;
     infstream.avail_out = (ui)dest_len;

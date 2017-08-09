@@ -13,14 +13,14 @@ struct NBTData
 {
     int type, ch_type; std::string name;
     ll vi; double vf; std::string vs; std::vector<int> va;
-    
+
     NBTData()
     : type(-1), ch_type(-1), name("none"), vi(0), vf(0), vs("") {
         va.clear();
     }
-    
+
     NBTData(int type_, const char* name_)
-	:type(type_), ch_type(-1), name(name_), vi(0), vf(0), vs("") {
+    : type(type_), ch_type(-1), name(name_), vi(0), vf(0), vs("") {
         va.clear();
     }
 };
@@ -32,15 +32,15 @@ struct node
 
     node() {}
     node(int type_, const char* name_)
-	: tag(NBTData(type_, name_)) {}
-    
+    : tag(NBTData(type_, name_)) {}
+
     void addChild(node* u) { ch.push_back(u); }
 
     node* childWithName(const char* name)
     {
         for (auto v : this->ch)
-	        if (v->tag.name == name)
-	            return v;
+            if (v->tag.name == name)
+                return v;
         return 0;
     }
 };

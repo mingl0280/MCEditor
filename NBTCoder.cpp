@@ -33,11 +33,11 @@ void NBTCoder::setIntContent(node *T, ll x)
 {
     switch (T->tag.type)
     {
-    case 1: T->tag.vi = (char)x; break;
-    case 2: T->tag.vi = (short)x; break;
-    case 3: T->tag.vi = (int)x; break;
-    case 4: T->tag.vi = x; break;
-    default: break;
+        case 1: T->tag.vi = (char)x; break;
+        case 2: T->tag.vi = (short)x; break;
+        case 3: T->tag.vi = (int)x; break;
+        case 4: T->tag.vi = x; break;
+        default: break;
     }
 }
 
@@ -50,14 +50,14 @@ void NBTCoder::setByteArrayContent(node* T, uc* A, ull len)
 {
     T->tag.va.clear();
     for (int i = 0; i < len; i++)
-	T->tag.va.push_back(A[i]);
+        T->tag.va.push_back(A[i]);
 }
 
 void NBTCoder::setIntArrayContent(node* T, int* A, ull len)
 {
     T->tag.va.clear();
     for (int i = 0; i < len; i++)
-	T->tag.va.push_back(A[i]);
+        T->tag.va.push_back(A[i]);
 }
 
 uc NBTCoder::getByteInArrayContent(node* T, int idx)
@@ -115,9 +115,9 @@ node* NBTCoder::decode(ull &offset)
     int type = buffer[offset]; offset++;
     int name_len = (int)byteToInt(buffer, offset, 2); offset += 2;
     string name = byteToString(buffer, offset, name_len); offset += name_len;
-    
+
     node *root = decodePayload(type, offset);
-    
+
     if (!root) return root;
     root->tag.type = type; root->tag.name = name;
     return root;
@@ -183,7 +183,7 @@ node* NBTCoder::decodeByteArray(ull &offset)
         root->tag.va.push_back((char)byteToInt(buffer, offset, 1));
         offset += 1;
     }
-    
+
     return root;
 }
 
@@ -193,24 +193,24 @@ node* NBTCoder::decodeString(ull &offset)
 
     int len = (short)byteToInt(buffer, offset, 2);
     offset += 2;
-    
+
     root->tag.vs = byteToString(buffer, offset, len);
     offset += len;
-    
+
     return root;
 }
 
 node* NBTCoder::decodeList(ull &offset)
 {
     node* root = new node();
-    
+
     int type = (char)byteToInt(buffer, offset, 1);
     root->tag.ch_type = type;
     offset++;
-    
+
     int len = (int)byteToInt(buffer, offset, 4);
     offset += 4;
-    
+
     root->ch.clear();
     for (int i = 0; i < len; i++)
     {
@@ -218,36 +218,36 @@ node* NBTCoder::decodeList(ull &offset)
         u->tag.type = type;
         root->ch.push_back(u);
     }
-    
+
     return root;
 }
 
 node* NBTCoder::decodeCompound(ull &offset)
 {
     node* root = new node();
-    
+
     int type;
     while ((type = (char)byteToInt(buffer, offset, 1)))
         root->ch.push_back(decode(offset));
     offset++;
-    
+
     return root;
 }
 
 node* NBTCoder::decodeIntArray(ull &offset)
 {
     node* root = new node();
-    
+
     root->tag.va.clear();
     int len = (int)byteToInt(buffer, offset, 4);
     offset += 4;
-    
+
     for (int i = 0; i < len; i++)
     {
         root->tag.va.push_back((int)byteToInt(buffer, offset, 4));
         offset += 4;
     }
-    
+
     return root;
 }
 
@@ -330,8 +330,8 @@ void NBTCoder::encodeByteArray(node* T, ull &offset)
 
     for (int i = 0; i < len; i++)
     {
-	intToByte(T->tag.va[i], buffer, offset, 1);
-	offset++;
+        intToByte(T->tag.va[i], buffer, offset, 1);
+        offset++;
     }
 }
 
@@ -354,13 +354,13 @@ void NBTCoder::encodeList(node* T, ull &offset)
     offset += 4;
 
     for (auto v : T->ch)
-	encodePayload(v, offset);
+        encodePayload(v, offset);
 }
 
 void NBTCoder::encodeCompound(node* T, ull &offset)
 {
     for (auto v : T->ch)
-	encode(v, offset);
+        encode(v, offset);
     intToByte(0, buffer, offset, 1);
     offset++;
 }
@@ -373,8 +373,8 @@ void NBTCoder::encodeIntArray(node* T, ull &offset)
 
     for (int x : T->tag.va)
     {
-	intToByte(x, buffer, offset, 4);
-	offset += 4;
+        intToByte(x, buffer, offset, 4);
+        offset += 4;
     }
 }
 
@@ -382,37 +382,36 @@ void NBTCoder::print(node* T, int d)
 {
     //printf("\n");
     for (int i = 0; i < d; i++)
-	printf("    ");
+        printf("    ");
     printf("{\n");
-    
-    
+
     for (int i = 0; i < d; i++)
-	    printf("    ");
+        printf("    ");
     printf("TYPE: %s,  NAME: %s\n",
-	   TypeName[T->tag.type].c_str(), T->tag.name.c_str());
+           TypeName[T->tag.type].c_str(), T->tag.name.c_str());
     for (int i = 0; i < d; i++)
-	    printf("    ");
+        printf("    ");
     printf("CONTENT: ");
     switch (T->tag.type)
     {
-    case 1:
-    case 2:
-    case 3:
-    case 4: printf("%lld", T->tag.vi); break;
-    case 5:
-    case 6: printf("%.4lf", T->tag.vf); break;
-    case 8: printf("%s", T->tag.vs.c_str()); break;
-    case 7:
-    case 11: for (auto x : T->tag.va) printf("%d ", x); break;
-    default: printf("No Content"); break;
+        case 1:
+        case 2:
+        case 3:
+        case 4: printf("%lld", T->tag.vi); break;
+        case 5:
+        case 6: printf("%.4lf", T->tag.vf); break;
+        case 8: printf("%s", T->tag.vs.c_str()); break;
+        case 7:
+        case 11: for (auto x : T->tag.va) printf("%d ", x); break;
+        default: printf("No Content"); break;
     }
     printf("\n");
-    
+
     for (node* v : T->ch)
-	print(v, d + 1);
-    
+        print(v, d + 1);
+
     printf("\n");
     for (int i = 0; i < d; i++)
-	printf("    ");
+        printf("    ");
     printf("}\n");
 }

@@ -97,9 +97,9 @@ struct Pos
 {
     int x, z, y;
 
-	Pos() {}
-	Pos(int x_, int z_, int y_):
-		x(x_), z(z_), y(y_) {};
+    Pos() {}
+    Pos(int x_, int z_, int y_):
+        x(x_), z(z_), y(y_) {};
 
     bool operator < (const Pos &B) const
     {
@@ -111,10 +111,10 @@ struct Pos
 };
 
 struct BlockInfo
-{	
-	ui id, add, data;
-	ui block_light, sky_light;
-    
+{
+    ui id, add, data;
+    ui block_light, sky_light;
+
     BlockInfo(): id(0), add(0), data(0),
                  block_light(0), sky_light(15) {};
 
