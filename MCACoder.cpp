@@ -2,6 +2,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <queue>
+#include <algorithm>
 #include "globals.h"
 using namespace std;
 
@@ -47,64 +48,78 @@ void MCACoder::setBlock(int x, int z, int y, const BlockInfo &info)
     }
 
     int idx = (chunk_x & 31) + 32 * (chunk_z & 31);
-    node* T = Chunk[idx];
+    node* chunk_root = Chunk[idx];
 
-    if (!T)
+    if (!chunk_root)
     {
         fprintf(stderr,
                 "Chunk that contains (%d, %d, %d) not initialized\n",
                 x, z, y);
         return;
     }
-
+    
     modification_saved = false;
-
+    
     int sec_no = y >> 4;
-
-    T = T->childWithName("Level");
-    T = T->childWithName("Sections");
-
-    node* T0 = T;
-    T = sectionWithY(T, sec_no);
+    node* level_root = chunk_root->childWithName("Level");
+    node* sec_root = level_root->childWithName("Sections");
+    node* T = sectionWithY(sec_root, sec_no);
     if (!T)
     {
         /*fprintf(stderr,
             "Section at Y = %d not initialized.\n", sec_no);
             return;*/
         T = newSectionWithY(sec_no);
-        T0->addChild(T);
+        sec_root->addChild(T);
     }
 
     node* u;
     int block_x = (x & 15), block_z = (z & 15), block_y = (y & 15);
     int block_pos = block_y * 16 * 16 + block_z * 16 + block_x;
 
+    //set Blocks
     u = T->childWithName("Blocks");
     nbt_coder.setByteInArrayContent(u, block_pos, info.id);
 
+    //set Add
     u = T->childWithName("Add");
-    if (!u)
+    if (u || info.add)
     {
-        u = new node(TAG_BYTE_ARRAY, "Add");
-        u->tag.va.resize(K2);
-        T->addChild(u);
+        if (!u)
+        {
+            u = new node(TAG_BYTE_ARRAY, "Add");
+            u->tag.va.resize(K2);
+            T->addChild(u);
+        }
+        nbt_coder.setHalfByteInArrayContent(u, block_pos, info.add);
     }
-    nbt_coder.setHalfByteInArrayContent(u, block_pos, info.add);
 
+    //set BlockData
     u = T->childWithName("Data");
-    if (!u)
-    {
-        u = new node(TAG_BYTE_ARRAY, "Add");
-        u->tag.va.resize(K2);
-        T->addChild(u);
-    }
+    // if (!u)
+    // {
+    //     u = new node(TAG_BYTE_ARRAY, "Add");
+    //     u->tag.va.resize(K2);
+    //     T->addChild(u);
+    // }
     nbt_coder.setHalfByteInArrayContent(u, block_pos, info.data);
 
+    //set BlockLight
     u = T->childWithName("BlockLight");
     nbt_coder.setHalfByteInArrayContent(u, block_pos, info.block_light);
 
+    //set SkyLight
     u = T->childWithName("SkyLight");
     nbt_coder.setHalfByteInArrayContent(u, block_pos, info.sky_light);
+
+    //update HeightMap
+    if (info.id || info.add)
+    {
+        T = level_root->childWithName("HeightMap");
+        int col_pos = block_z * 16 + block_x;
+        int h = max((int)nbt_coder.getByteInArrayContent(T, col_pos), y);
+        nbt_coder.setByteInArrayContent(T, col_pos, h);
+    }
 }
 
 BlockInfo MCACoder::getBlock(int x, int z, int y)

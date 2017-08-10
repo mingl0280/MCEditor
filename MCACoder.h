@@ -25,7 +25,7 @@ private:
 
     std::string cur_file_name;
     node* Chunk[K1 + 7];
-    uc buffer[M64], chunk_buffer[M1];
+    uc buffer[M64], chunk_buffer[M1 << 1];
 
     int location[K1], timestamp[K1];
 

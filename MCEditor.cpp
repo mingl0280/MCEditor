@@ -144,13 +144,13 @@ void MCEditor::lightPropagate(ui light[512][512][256])
                         for (int d = 0; d < 6; d++)
                         {
                             int vx = u.x + DX[d],
-                            vz = u.z + DZ[d],
-                            vy = u.y + DY[d];
+                                vz = u.z + DZ[d],
+                                vy = u.y + DY[d];
                             if (!in_region(vx, vz, vy, 0, 0, 0,
                                            x_len + 60, z_len + 60, 256))
                                 continue;
 
-                            int dec = get_opacity(blocks[vx][vz][vy]) + 1;
+                            int dec = get_opacity(blocks[vx][vz][vy]);
                             int vlight = (int)light[u.x][u.z][u.y] - dec;
                             if (vlight <= 0) continue;
 

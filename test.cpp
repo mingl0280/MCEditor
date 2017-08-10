@@ -13,8 +13,8 @@ int main()
     int x, y, z, id;
     scanf("%d%d%d%d", &x, &y, &z, &id);
 
-    int x0 = x - 5, z0 = z - 5, y0 = y;
-    int x_len = 200, z_len = 200, y_len = 30;
+    int x0 = x, z0 = z, y0 = y;
+    int x_len = 300, z_len = 300, y_len = 1;
 
     for (int i = 0; i < x_len; i++)
         for (int j = 0; j < z_len; j++)
