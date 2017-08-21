@@ -9,7 +9,7 @@ using namespace std;
 string MCAFileNameXZ(int x, int z)
 {
     char tmp[256];
-    int len = sprintf(tmp, "r.%d.%d.mca", x, z);
+    int len = sprintf(tmp, "./region/r.%d.%d.mca", x, z);
     if (len < 0)
     {
         fprintf(stdout, "Buffer overflow when generating mca file name.\n");
@@ -32,9 +32,10 @@ void MCACoder::saveModification()
     modification_saved = true;
 }
 
-void MCACoder::setBlock(int x, int z, int y, const BlockInfo &info)
+void MCACoder::setBlock(const Pos &position, const BlockInfo &info)
 {
     //fprintf(stderr, "Setting (%d, %d, %d).\n", x, y, z);
+    int x = position.x, z = position.z, y = position.y;
 
     int chunk_x = x >> 4, chunk_z = z >> 4;
     int region_x = chunk_x >> 5, region_z = chunk_z >> 5;
@@ -54,7 +55,7 @@ void MCACoder::setBlock(int x, int z, int y, const BlockInfo &info)
     {
         fprintf(stderr,
                 "Chunk that contains (%d, %d, %d) not initialized\n",
-                x, z, y);
+                x, y, z);
         return;
     }
     
@@ -63,13 +64,13 @@ void MCACoder::setBlock(int x, int z, int y, const BlockInfo &info)
     int sec_no = y >> 4;
     node* level_root = chunk_root->childWithName("Level");
     node* sec_root = level_root->childWithName("Sections");
-    node* T = sectionWithY(sec_root, sec_no);
+    node* T = sectionNodeWithY(sec_root, sec_no);
     if (!T)
     {
         /*fprintf(stderr,
             "Section at Y = %d not initialized.\n", sec_no);
             return;*/
-        T = newSectionWithY(sec_no);
+        T = newSectionNodeWithY(sec_no);
         sec_root->addChild(T);
     }
 
@@ -152,7 +153,7 @@ BlockInfo MCACoder::getBlock(int x, int z, int y)
 
     T = T->childWithName("Level");
     T = T->childWithName("Sections");
-    T = sectionWithY(T, sec_no);
+    T = sectionNodeWithY(T, sec_no);
     if (!T)
     {
         /*fprintf(stderr,
@@ -181,6 +182,73 @@ BlockInfo MCACoder::getBlock(int x, int z, int y)
 
     return BlockInfo(id, add, data, block_light, sky_light);
 }
+
+void MCACoder::removeBlockEntity(const Pos& position)
+{
+    int x = position.x, z = position.z, y = position.y;
+
+    int chunk_x = x >> 4, chunk_z = z >> 4;
+    int region_x = chunk_x >> 5, region_z = chunk_z >> 5;
+    string file_name = MCAFileNameXZ(region_x, region_z);
+
+    if (loadMCA(file_name) == -1) return;
+
+    int idx = (chunk_x & 31) + 32 * (chunk_z & 31);
+    node* chunk_root = Chunk[idx];
+    if (!chunk_root) return;
+
+    node* level_root = chunk_root->childWithName("Level");
+    node* T = level_root->childWithName("TileEntities");
+
+    for (auto it = T->ch.begin(); it != T->ch.end(); it++)
+    {
+        node* u = *it;
+        if (u->ch.empty()) continue;
+
+        node* v;
+        v = u->childWithName("x"); int x = v->tag.vi;
+        v = u->childWithName("z"); int z = v->tag.vi;
+        v = u->childWithName("y"); int y = v->tag.vi;
+        if (!(position == Pos(x, z, y))) continue;
+
+        delete u;
+        it = T->ch.erase(it);
+        modification_saved = false;
+        break;
+    }
+}
+
+void MCACoder::insertBlockEntity(const Pos& position, BlockEntity* entity)
+{
+    if (!entity) return;
+
+    int x = position.x, z = position.z, y = position.y;
+
+    node* chunk_root = chunkWithXZ(x, z);
+    if (!chunk_root)
+    {
+        fprintf(stderr,
+                "Chunk that contains (%d, ?, %d) is not initialized\n",
+                x, z);
+        return;
+    }
+
+    node* level_root = chunk_root->childWithName("Level");
+    node* T = level_root->childWithName("TileEntities");
+    if (!T)
+    {
+        fprintf(stderr,
+                "TileEntities does not exits (%d, %d, %d)\n", 
+                x, y, z);
+        return;
+    }
+
+    T->tag.ch_type = TAG_COMPOUND;
+    T->addChild(newBlockEntityNode(entity));
+    modification_saved = false;
+}
+
+//////////////////////////////////PRIVATE/////////////////////////////////////
 
 int MCACoder::loadMCA(const string &file_name)
 {
@@ -228,6 +296,11 @@ int MCACoder::loadMCA(const string &file_name)
             decompress(chunk_buffer, sizeof(chunk_buffer), buffer, chunk_len);
 
             Chunk[i] = nbt_coder.Decode(chunk_buffer);
+
+            //debug::
+            //string name = "chunk"; name += to_string(i);
+            //freopen(name.c_str(), "w", stdout);
+            //nbt_coder.Print(Chunk[i]);
         }
         else Chunk[i] = 0;
 
@@ -281,7 +354,24 @@ void MCACoder::writeMCA()
     fclose(handle);
 }
 
-node* MCACoder::sectionWithY(node* T, int y)
+node* MCACoder::chunkWithXZ(int x, int z)
+{
+    int chunk_x = x >> 4, chunk_z = z >> 4;
+    int region_x = chunk_x >> 5, region_z = chunk_z >> 5;
+    string file_name = MCAFileNameXZ(region_x, region_z);
+
+    if (loadMCA(file_name) == -1)
+    {
+        fprintf(stderr, "File %s that contains block (%d, ?, %d) does not exists.\n",
+                file_name.c_str(), x, z);
+        return 0;
+    }
+
+    int idx = (chunk_x & 31) + 32 * (chunk_z & 31);
+    return Chunk[idx];
+}
+
+node* MCACoder::sectionNodeWithY(node* T, int y)
 {
     for (node* u : T->ch)
     {
@@ -291,7 +381,7 @@ node* MCACoder::sectionWithY(node* T, int y)
     return 0; //newSectionWithY(y);
 }
 
-node* MCACoder::newSectionWithY(int y)
+node* MCACoder::newSectionNodeWithY(int y)
 {
     node* u;
     node* T = new node(TAG_COMPOUND, "none");
@@ -320,6 +410,48 @@ node* MCACoder::newSectionWithY(int y)
     u = new node(TAG_BYTE_ARRAY, "SkyLight");
     u->tag.va.resize(K2, 0xFF);
     T->addChild(u);
+
+    return T;
+}
+
+node* MCACoder::newBlockEntityNode(BlockEntity* entity)
+{
+    node *u;
+
+    //Tags common to all block entities
+    node* T = new node(TAG_COMPOUND, "none");
+
+    u = new node(TAG_STRING, "id");
+    u->tag.vs = entity->entity_id;
+    T->addChild(u);
+
+    u = new node(TAG_INT, "x");
+    u->tag.vi = entity->position.x;
+    T->addChild(u);
+
+    u = new node(TAG_INT, "y");
+    u->tag.vi = entity->position.y;
+    T->addChild(u);
+
+    u = new node(TAG_INT, "z");
+    u->tag.vi = entity->position.z;
+    T->addChild(u);
+
+    //Tags special to each block entity
+    if (entity->entity_id == "minecraft:noteblock")
+    {
+        BlockEntityNote* noteblock = (BlockEntityNote*)entity;
+        
+        u = new node(TAG_BYTE, "note");
+        u->tag.vi = noteblock->note;
+        T->addChild(u);
+
+        u = new node(TAG_BYTE, "powered");
+        u->tag.vi = noteblock->powered;
+        T->addChild(u);
+    }
+
+    //TODO
 
     return T;
 }

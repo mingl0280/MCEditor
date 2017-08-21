@@ -3,14 +3,31 @@
 
 #include "globals.h"
 #include "MCACoder.h"
+#include "BlockEntity.h"
+
+class MCRegion
+{
+public:
+    BlockInfo*** A;
+    BlockEntity**** B;
+
+    int x_len, z_len, y_len,
+        x_ori, z_ori, y_ori;
+
+    MCRegion(int x0, int z0, int y0,
+             int xl, int zl, int yl);
+    
+    ~MCRegion();
+
+private:
+    void delBlockEntity(BlockEntity* entity);
+};
 
 class MCEditor
 {
 public:
-    void setRegion(int A[512][512][256],
-                   int B[512][512][256],
-                   int xl, int zl, int yl,
-                   int x0, int z0, int y0);
+    void setRegion(const MCRegion &A);
+
 private:
     MCACoder mca_coder;
     
@@ -21,20 +38,27 @@ private:
     int x_len, z_len, y_len,
         x_ori, z_ori, y_ori;
     
-    ui blocks[512][512][256],
-       blockdata[512][512][256],
-       blocklight[512][512][256],
-       skylight[512][512][256];
+    ui ***blocks, ***blockdata,
+          ***blocklight, ***skylight;
+    BlockEntity**** block_entities;
 
-    void initBlocks(int A[512][512][256], int B[512][512][256]);
+    void initArrays(int l1, int l2, int l3);
+
+    void clearArrays(int l1, int l2, int l3);
+
+    ui*** new3DUIArray(int l1, int l2, int l3);
+
+    void del3DUIArray(ui*** &A, int l1, int l2, int l3);
+
+    void initBlocks(const MCRegion &A);
 
     void computeBlockLight();
 
     void computeSkyLight();
+    
+    void lightPropagate(ui*** light);
 
     void updateMCA();
-
-    void lightPropagate(ui light[512][512][256]);
 };
 
 #endif /* MCAEditor_h */

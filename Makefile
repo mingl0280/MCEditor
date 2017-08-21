@@ -8,5 +8,8 @@ default:
 paint:
 	$(CC) $(LIBS) paint.cpp $(CFLAGS) -lz
 
+music:
+	$(CC) $(LIBS) music.cpp $(CFLAGS) -lz
+
 clean:
 	rm *.out

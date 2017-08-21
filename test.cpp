@@ -1,29 +1,32 @@
 #include <cstdio>
 #include "globals.h"
 #include "MCEditor.h"
+#include "BlockEntity.h"
 #include "MCACoder.h"
 using namespace std;
 
 MCEditor editor;
 MCACoder coder;
-int A[512][512][256] = {0}, B[512][512][256] = {0};
 
 int main()
 {
-    int x, y, z, id;
-    scanf("%d%d%d%d", &x, &y, &z, &id);
-
-    int x0 = x, z0 = z, y0 = y;
-    int x_len = 300, z_len = 300, y_len = 1;
-
-    for (int i = 0; i < x_len; i++)
-        for (int j = 0; j < z_len; j++)
-            for (int k = 0; k < y_len; k++)
+    int x0, y0, z0;
+    int xl = 10, yl = 1, zl = 10;
+    
+    scanf("%d%d%d", &x0, &y0, &z0);
+    MCRegion region(x0, z0, y0, xl, zl, yl);
+    
+    for (int x = 0; x < xl; x++)
+        for (int z = 0; z < zl; z++)
+            for (int y = 0; y < yl; y++)
             {
-                A[i][j][k] = id;
+                region.A[x][z][y] = BlockInfo(25, 0, 0, 0, 0);
+                Pos position(x + x0, z + z0, y + y0);
+                region.B[x][z][y] = new BlockEntityNote(position, 22, 0);
             }
-
-    editor.setRegion(A, B, x_len, z_len, y_len, x0, z0, y0);
-
+    
+    editor.setRegion(region);
+    //coder.getBlock(x0, z0, y0);
+    
     return 0;
 }

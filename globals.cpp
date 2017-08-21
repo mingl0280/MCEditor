@@ -117,18 +117,23 @@ ull compress(uc *dest, ull dest_len, uc* src, ull src_len)
 }
 
 //get the opacity of block id
-int get_opacity(int id)
+int get_opacity(ui id)
 {
     switch (id)
     {
         case 0: return 1;
         case 20: return 1;
+        case 50: return 1;
         default: return 15;
     }
 }
 
 //get the block light of block id
-int get_block_light(int id)
+int get_block_light(ui id)
 {
-    return 0;
+    switch (id)
+    {
+        case 50: return 14;
+        default: return 0;
+    }
 }

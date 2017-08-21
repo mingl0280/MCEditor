@@ -86,10 +86,10 @@ void decompress(uc *dest, ull dest_len, uc* src, ull src_len);
 ull compress(uc *dest, ull dest_len, uc* src, ull src_len);
 
 //get the opacity of block id
-int get_opacity(int id);
+int get_opacity(ui id);
 
 //get the block light
-int get_block_light(int id);
+int get_block_light(ui id);
 
 /////////////////////////////////STRUCTs//////////////////////////////
 
@@ -108,6 +108,11 @@ struct Pos
             return ax < bx;
         else return (z >> 9) < (B.z >> 9);
     }
+
+    bool operator == (const Pos &B) const
+    {
+        return x == B.x && z == B.z && y == B.y;
+    }
 };
 
 struct BlockInfo
@@ -119,7 +124,7 @@ struct BlockInfo
                  block_light(0), sky_light(15) {};
 
     BlockInfo(ui id_, ui add_, ui data_,
-                ui block_light_, ui sky_light_)
+                ui block_light_ = 0, ui sky_light_ = 0)
             : id(id_), add(add_), data(data_),
                 block_light(block_light_), sky_light(sky_light_) {};
 };

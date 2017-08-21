@@ -4,27 +4,33 @@
 #include <string>
 #include <cstdlib>
 #include "NBTCoder.h"
+#include "BlockEntity.h"
 
 class MCACoder
 {
 public:
-    MCACoder(): modification_saved(true), cur_file_name("") {
+    MCACoder()
+    : modification_saved(true), cur_file_name("") 
+    {
         memset(Chunk, 0, sizeof(Chunk));
     }
 
     void saveModification();
 
-    void setBlock(int x, int z, int y,
-                  const BlockInfo &info);
+    void setBlock(const Pos &position, const BlockInfo &info);
 
     BlockInfo getBlock(int x, int z, int y);
+
+    void removeBlockEntity(const Pos &position);
+
+    void insertBlockEntity(const Pos &position, BlockEntity* entity);
 
 private:
     NBTCoder nbt_coder;
     bool modification_saved;
 
     std::string cur_file_name;
-    node* Chunk[K1 + 7];
+    node* Chunk[K1];
     uc buffer[M64], chunk_buffer[M1 << 1];
 
     int location[K1], timestamp[K1];
@@ -33,11 +39,13 @@ private:
 
     void writeMCA();
 
-    node* sectionWithY(node* T, int y);
+    node* chunkWithXZ(int x, int z);
 
-    node* newSectionWithY(int y);
+    node* sectionNodeWithY(node* T, int y);
 
-    void setHalfByte(node* T, int v);
+    node* newSectionNodeWithY(int y);
+
+    node* newBlockEntityNode(BlockEntity* entity);
 };
 
 #endif /* MCACoder_h */
