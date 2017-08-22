@@ -122,8 +122,11 @@ int get_opacity(ui id)
     switch (id)
     {
         case 0: return 1;
+        case 8: return 2;
+        case 9: return 2;
         case 20: return 1;
         case 50: return 1;
+        case 95: return 1;
         default: return 15;
     }
 }

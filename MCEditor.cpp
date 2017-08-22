@@ -246,6 +246,16 @@ void MCEditor::updateMCA()
     for (Block u : VB)
         mca_coder.setBlock(u.position, u.info);
 
+    //update HeightMap
+    for (int x = 15; x < x_len + 45; x++)
+        for (int z = 15; z < z_len + 45; z++)
+            for (int y = 0; y < 255; y++)
+                if (skylight[x][z][y] == 15)
+                {
+                    mca_coder.setHeightMap(x + x_ori, z + z_ori, y);
+                    break;
+                }
+
     //insert associated block entities
     vector<pair<Pos, BlockEntity*> > VE;
     for (int x = 0; x < x_len; x++)
@@ -269,7 +279,7 @@ void MCEditor::lightPropagate(ui*** light)
 
     for (int x = 0; x < x_len + 60; x++)
         for (int z = 0; z < z_len + 60; z++)
-            for (int y = 0; y < 256; y++)
+            for (int y = 255; y >= 0; y--)
                 if (light[x][z][y])
                 {
                     Q.push(Pos(x, z, y));

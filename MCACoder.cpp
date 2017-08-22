@@ -49,7 +49,7 @@ void MCACoder::setBlock(const Pos &position, const BlockInfo &info)
     }
 
     int idx = (chunk_x & 31) + 32 * (chunk_z & 31);
-    node* chunk_root = Chunk[idx];
+    node *chunk_root = Chunk[idx];
 
     if (!chunk_root)
     {
@@ -58,13 +58,13 @@ void MCACoder::setBlock(const Pos &position, const BlockInfo &info)
                 x, y, z);
         return;
     }
-    
+
     modification_saved = false;
-    
+
     int sec_no = y >> 4;
-    node* level_root = chunk_root->childWithName("Level");
-    node* sec_root = level_root->childWithName("Sections");
-    node* T = sectionNodeWithY(sec_root, sec_no);
+    node *level_root = chunk_root->childWithName("Level");
+    node *sec_root = level_root->childWithName("Sections");
+    node *T = sectionNodeWithY(sec_root, sec_no);
     if (!T)
     {
         /*fprintf(stderr,
@@ -74,7 +74,7 @@ void MCACoder::setBlock(const Pos &position, const BlockInfo &info)
         sec_root->addChild(T);
     }
 
-    node* u;
+    node *u;
     int block_x = (x & 15), block_z = (z & 15), block_y = (y & 15);
     int block_pos = block_y * 16 * 16 + block_z * 16 + block_x;
 
@@ -97,12 +97,6 @@ void MCACoder::setBlock(const Pos &position, const BlockInfo &info)
 
     //set BlockData
     u = T->childWithName("Data");
-    // if (!u)
-    // {
-    //     u = new node(TAG_BYTE_ARRAY, "Add");
-    //     u->tag.va.resize(K2);
-    //     T->addChild(u);
-    // }
     nbt_coder.setHalfByteInArrayContent(u, block_pos, info.data);
 
     //set BlockLight
@@ -112,15 +106,6 @@ void MCACoder::setBlock(const Pos &position, const BlockInfo &info)
     //set SkyLight
     u = T->childWithName("SkyLight");
     nbt_coder.setHalfByteInArrayContent(u, block_pos, info.sky_light);
-
-    //update HeightMap
-    if (info.id || info.add)
-    {
-        T = level_root->childWithName("HeightMap");
-        int col_pos = block_z * 16 + block_x;
-        int h = max((int)nbt_coder.getByteInArrayContent(T, col_pos), y);
-        nbt_coder.setByteInArrayContent(T, col_pos, h);
-    }
 }
 
 BlockInfo MCACoder::getBlock(int x, int z, int y)
@@ -134,12 +119,12 @@ BlockInfo MCACoder::getBlock(int x, int z, int y)
     if (loadMCA(file_name) == -1)
     {
         fprintf(stderr, "File %s that contains block (%d, %d, %d) does not exists.\n",
-            file_name.c_str(), x, y, z);
+                file_name.c_str(), x, y, z);
         return BlockInfo();
     }
 
     int idx = (chunk_x & 31) + 32 * (chunk_z & 31);
-    node* T = Chunk[idx];
+    node *T = Chunk[idx];
 
     if (!T)
     {
@@ -161,7 +146,7 @@ BlockInfo MCACoder::getBlock(int x, int z, int y)
         return BlockInfo();
     }
 
-    node* u;
+    node *u;
     int block_x = (x & 15), block_z = (z & 15), block_y = (y & 15);
     int block_pos = block_y * 16 * 16 + block_z * 16 + block_x;
 
@@ -169,10 +154,10 @@ BlockInfo MCACoder::getBlock(int x, int z, int y)
     int id = nbt_coder.getByteInArrayContent(u, block_pos);
 
     u = T->childWithName("Add");
-    int add = u? nbt_coder.getHalfByteInArrayContent(u, block_pos): 0;
+    int add = u ? nbt_coder.getHalfByteInArrayContent(u, block_pos) : 0;
 
     u = T->childWithName("Data");
-    int data = u? nbt_coder.getHalfByteInArrayContent(u, block_pos): 0;
+    int data = u ? nbt_coder.getHalfByteInArrayContent(u, block_pos) : 0;
 
     u = T->childWithName("BlockLight");
     int block_light = nbt_coder.getHalfByteInArrayContent(u, block_pos);
@@ -183,7 +168,7 @@ BlockInfo MCACoder::getBlock(int x, int z, int y)
     return BlockInfo(id, add, data, block_light, sky_light);
 }
 
-void MCACoder::removeBlockEntity(const Pos& position)
+void MCACoder::removeBlockEntity(const Pos &position)
 {
     int x = position.x, z = position.z, y = position.y;
 
@@ -191,25 +176,32 @@ void MCACoder::removeBlockEntity(const Pos& position)
     int region_x = chunk_x >> 5, region_z = chunk_z >> 5;
     string file_name = MCAFileNameXZ(region_x, region_z);
 
-    if (loadMCA(file_name) == -1) return;
+    if (loadMCA(file_name) == -1)
+        return;
 
     int idx = (chunk_x & 31) + 32 * (chunk_z & 31);
-    node* chunk_root = Chunk[idx];
-    if (!chunk_root) return;
+    node *chunk_root = Chunk[idx];
+    if (!chunk_root)
+        return;
 
-    node* level_root = chunk_root->childWithName("Level");
-    node* T = level_root->childWithName("TileEntities");
+    node *level_root = chunk_root->childWithName("Level");
+    node *T = level_root->childWithName("TileEntities");
 
     for (auto it = T->ch.begin(); it != T->ch.end(); it++)
     {
-        node* u = *it;
-        if (u->ch.empty()) continue;
+        node *u = *it;
+        if (u->ch.empty())
+            continue;
 
-        node* v;
-        v = u->childWithName("x"); int x = v->tag.vi;
-        v = u->childWithName("z"); int z = v->tag.vi;
-        v = u->childWithName("y"); int y = v->tag.vi;
-        if (!(position == Pos(x, z, y))) continue;
+        node *v;
+        v = u->childWithName("x");
+        int x = v->tag.vi;
+        v = u->childWithName("z");
+        int z = v->tag.vi;
+        v = u->childWithName("y");
+        int y = v->tag.vi;
+        if (!(position == Pos(x, z, y)))
+            continue;
 
         delete u;
         it = T->ch.erase(it);
@@ -218,13 +210,14 @@ void MCACoder::removeBlockEntity(const Pos& position)
     }
 }
 
-void MCACoder::insertBlockEntity(const Pos& position, BlockEntity* entity)
+void MCACoder::insertBlockEntity(const Pos &position, BlockEntity *entity)
 {
-    if (!entity) return;
+    if (!entity)
+        return;
 
     int x = position.x, z = position.z, y = position.y;
 
-    node* chunk_root = chunkWithXZ(x, z);
+    node *chunk_root = chunkWithXZ(x, z);
     if (!chunk_root)
     {
         fprintf(stderr,
@@ -233,12 +226,12 @@ void MCACoder::insertBlockEntity(const Pos& position, BlockEntity* entity)
         return;
     }
 
-    node* level_root = chunk_root->childWithName("Level");
-    node* T = level_root->childWithName("TileEntities");
+    node *level_root = chunk_root->childWithName("Level");
+    node *T = level_root->childWithName("TileEntities");
     if (!T)
     {
         fprintf(stderr,
-                "TileEntities does not exits (%d, %d, %d)\n", 
+                "TileEntities does not exits (%d, %d, %d)\n",
                 x, y, z);
         return;
     }
@@ -246,6 +239,26 @@ void MCACoder::insertBlockEntity(const Pos& position, BlockEntity* entity)
     T->tag.ch_type = TAG_COMPOUND;
     T->addChild(newBlockEntityNode(entity));
     modification_saved = false;
+}
+
+void MCACoder::setHeightMap(int x, int z, int y)
+{
+    node *chunk_root = chunkWithXZ(x, z);
+    if (!chunk_root)
+    {
+        fprintf(stderr,
+                "Chunk that contains (%d, ?, %d) is unintialized",
+                x, z);
+        return;
+    }
+
+    node *level_root = chunk_root->childWithName("Level");
+    node *T = level_root->childWithName("HeightMap");
+
+    int block_x = (x & 15), block_z = (z & 15);
+    int col_pos = block_z * 16 + block_x;
+    int h = min((int)nbt_coder.getByteInArrayContent(T, col_pos), y);
+    nbt_coder.setByteInArrayContent(T, col_pos, 0);
 }
 
 //////////////////////////////////PRIVATE/////////////////////////////////////
@@ -260,8 +273,9 @@ int MCACoder::loadMCA(const string &file_name)
     if (cur_file_name != "")
         saveModification();
 
-    FILE* handle = fopen(file_name.c_str(), "r");
-    if (!handle) return -1;
+    FILE *handle = fopen(file_name.c_str(), "r");
+    if (!handle)
+        return -1;
 
     cur_file_name = file_name;
 
@@ -302,7 +316,8 @@ int MCACoder::loadMCA(const string &file_name)
             //freopen(name.c_str(), "w", stdout);
             //nbt_coder.Print(Chunk[i]);
         }
-        else Chunk[i] = 0;
+        else
+            Chunk[i] = 0;
 
     fclose(handle);
 
@@ -327,7 +342,7 @@ void MCACoder::writeMCA()
 
         ull chunk_len = nbt_coder.Encode(Chunk[i], chunk_buffer);
         ull cmpr_len = compress(buffer + offset + 5, sizeof(buffer) - (offset + 5),
-                    chunk_buffer, chunk_len);
+                                chunk_buffer, chunk_len);
 
         cmpr_len++;
         intToByte(cmpr_len, buffer, offset, 4);
@@ -338,7 +353,8 @@ void MCACoder::writeMCA()
         ull sector_cnt = 0;
         if (cmpr_len % K4 == 0)
             sector_cnt = cmpr_len / K4;
-        else sector_cnt = cmpr_len / K4 + 1;
+        else
+            sector_cnt = cmpr_len / K4 + 1;
 
         intToByte(sector_cnt, buffer, (i << 2) + 3, 1);
         cmpr_len = sector_cnt * K4; //Pad to a multiple of K4
@@ -349,12 +365,12 @@ void MCACoder::writeMCA()
         intToByte(timestamp[i], buffer, K4 + (i << 2), 4);
 
     remove(cur_file_name.c_str());
-    FILE* handle = fopen(cur_file_name.c_str(), "w");
+    FILE *handle = fopen(cur_file_name.c_str(), "w");
     fwrite(buffer, 1, offset, handle);
     fclose(handle);
 }
 
-node* MCACoder::chunkWithXZ(int x, int z)
+node *MCACoder::chunkWithXZ(int x, int z)
 {
     int chunk_x = x >> 4, chunk_z = z >> 4;
     int region_x = chunk_x >> 5, region_z = chunk_z >> 5;
@@ -371,20 +387,21 @@ node* MCACoder::chunkWithXZ(int x, int z)
     return Chunk[idx];
 }
 
-node* MCACoder::sectionNodeWithY(node* T, int y)
+node *MCACoder::sectionNodeWithY(node *T, int y)
 {
-    for (node* u : T->ch)
+    for (node *u : T->ch)
     {
-        node* v = u->childWithName("Y");
-        if (v->tag.vi == y) return u;
+        node *v = u->childWithName("Y");
+        if (v->tag.vi == y)
+            return u;
     }
     return 0; //newSectionWithY(y);
 }
 
-node* MCACoder::newSectionNodeWithY(int y)
+node *MCACoder::newSectionNodeWithY(int y)
 {
-    node* u;
-    node* T = new node(TAG_COMPOUND, "none");
+    node *u;
+    node *T = new node(TAG_COMPOUND, "none");
 
     u = new node(TAG_BYTE, "Y");
     u->tag.vi = y;
@@ -394,7 +411,7 @@ node* MCACoder::newSectionNodeWithY(int y)
     u->tag.va.resize(K4, 0);
     T->addChild(u);
 
-/*  u = new node(TAG_BYTE_ARRAY, "Add");
+    /*  u = new node(TAG_BYTE_ARRAY, "Add");
     u->tag.va.resize(K2, 0);
     T->addChild(u);
     */
@@ -414,12 +431,12 @@ node* MCACoder::newSectionNodeWithY(int y)
     return T;
 }
 
-node* MCACoder::newBlockEntityNode(BlockEntity* entity)
+node *MCACoder::newBlockEntityNode(BlockEntity *entity)
 {
     node *u;
 
     //Tags common to all block entities
-    node* T = new node(TAG_COMPOUND, "none");
+    node *T = new node(TAG_COMPOUND, "none");
 
     u = new node(TAG_STRING, "id");
     u->tag.vs = entity->entity_id;
@@ -440,8 +457,8 @@ node* MCACoder::newBlockEntityNode(BlockEntity* entity)
     //Tags special to each block entity
     if (entity->entity_id == "minecraft:noteblock")
     {
-        BlockEntityNote* noteblock = (BlockEntityNote*)entity;
-        
+        BlockEntityNote *noteblock = (BlockEntityNote *)entity;
+
         u = new node(TAG_BYTE, "note");
         u->tag.vi = noteblock->note;
         T->addChild(u);

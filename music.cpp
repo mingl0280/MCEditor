@@ -17,27 +17,29 @@ struct event
     event(int offset_, int pitch_)
         : offset(offset_), pitch(pitch_) {}
 
-    bool operator < (const event &E) const
+    bool operator<(const event &E) const
     {
         return offset < E.offset;
     }
 };
 
 vector<event> E;
-vector<vector<event> > Track;
+vector<vector<event>> Track;
 vector<int> TrackOffset;
 
 void setNoteBlockWithPitch(MCRegion &R, int x, int z, int y, int pitch);
 void setRepeaterWithDelay(MCRegion &R, int x, int z, int y, int delay);
 void setRedStone(MCRegion &R, int x, int z, int y);
-void setConcrete(MCRegion &R, int x, int z, int y);
+void setRedStoneLamp(MCRegion &R, int x, int z, int y);
+void setStainedGlassWithColor(MCRegion &R, int x, int z, int y, int color);
+void setConcreteWithColor(MCRegion &R, int x, int z, int y, int color);
 
 void setNoteBlockWithPitch(MCRegion &R, int x, int z, int y, int pitch)
 {
     if (pitch < 30 || pitch > 102)
     {
         setRedStone(R, x, z, y);
-        setConcrete(R, x, z, y - 1);
+        setConcreteWithColor(R, x, z, y - 1, 0);
         return;
     } //out of range
 
@@ -58,7 +60,12 @@ void setNoteBlockWithPitch(MCRegion &R, int x, int z, int y, int pitch)
         note = pitch - 54;
         R.A[x][z][y - 1] = BlockInfo(42, 0, 0); //Piano: Iron Block
     }
-    else if (79 <= pitch && pitch <= 102)
+    else if (79 <= pitch && pitch <= 90)
+    {
+        note = pitch - 66;
+        R.A[x][z][y - 1] = BlockInfo(82, 0, 0); //Flute: Clay Block
+    }
+    else if (91 <= pitch && pitch <= 102)
     {
         note = pitch - 78;
         R.A[x][z][y - 1] = BlockInfo(41, 0, 0); //Bell: Gold Block
@@ -83,39 +90,73 @@ void setRedStone(MCRegion &R, int x, int z, int y)
     R.B[x][z][y] = 0;
 }
 
-void setConcrete(MCRegion &R, int x, int z, int y)
+void setRedStoneLamp(MCRegion &R, int x, int z, int y)
 {
-    R.A[x][z][y] = BlockInfo(251, 0, 0);
+    R.A[x][z][y] = BlockInfo(123, 0, 0);
+    R.B[x][z][y] = 0;
+}
+
+void setStainedGlassWithColor(MCRegion &R, int x, int z, int y, int color)
+{
+    R.A[x][z][y] = BlockInfo(95, 0, color);
+    R.B[x][z][y] = 0;
+}
+
+void setConcreteWithColor(MCRegion &R, int x, int z, int y, int color)
+{
+    R.A[x][z][y] = BlockInfo(251, 0, color);
     R.B[x][z][y] = 0;
 }
 
 int max_len = 0;
 MCEditor Editor;
 
-void buildTrack(MCRegion &R, int k)
+void buildTrack(MCRegion &R, int k, bool light = true)
 {
+    k <<= 1;
     int offset = 0;
     int x_offset = 0;
-    for (auto e : Track[k])
+    for (auto e : Track[k >> 1])
     {
         int delta = e.offset - offset;
         int q = delta / 4, r = delta % 4;
 
         for (int x = x_offset; x < x_offset + q; x++)
         {
-            setConcrete(R, x, k << 1, 0);
-            setRepeaterWithDelay(R, x, k << 1, 1, 4);
+            setConcreteWithColor(R, x, k, 2, 0);
+            setRepeaterWithDelay(R, x, k, 3, 4);
+
+            setConcreteWithColor(R, x, k, 0, 0);
+            setRepeaterWithDelay(R, x, k, 1, 4);
+            if (light)
+                setStainedGlassWithColor(R, x, k + 1, 2, 0);
         }
         x_offset += q;
 
         if (r > 0)
         {
-            setConcrete(R, x_offset, k << 1, 0);
-            setRepeaterWithDelay(R, x_offset, k << 1, 1, r);
+            setConcreteWithColor(R, x_offset, k, 2, 0);
+            setRepeaterWithDelay(R, x_offset, k, 3, r);
+
+            setConcreteWithColor(R, x_offset, k, 0, 0);
+            setRepeaterWithDelay(R, x_offset, k, 1, r);
+            if (light)
+                setStainedGlassWithColor(R, x_offset, k + 1, 2, 0);
+
             x_offset++;
         }
 
-        setNoteBlockWithPitch(R, x_offset, k << 1, 1, e.pitch);
+        setNoteBlockWithPitch(R, x_offset, k, 3, e.pitch);
+        setStainedGlassWithColor(R, x_offset, k, 7, 0);
+
+        setConcreteWithColor(R, x_offset, k, 0, 0);
+        setConcreteWithColor(R, x_offset, k, 1, 0);
+        if (light)
+        {
+            setRedStoneLamp(R, x_offset, k + 1, 1);
+            setStainedGlassWithColor(R, x_offset, k + 1, 2, 0);
+        }
+
         x_offset++;
 
         offset = e.offset;
@@ -128,7 +169,7 @@ int main()
     int x0, z0, y0;
     scanf("%d%d%d", &x0, &y0, &z0);
 
-    FILE* handle = fopen("notes.txt", "r");
+    FILE *handle = fopen("notes.txt", "r");
     if (!handle)
     {
         fprintf(stderr, "File not found.\n");
@@ -145,7 +186,7 @@ int main()
     }
     fclose(handle);
     sort(E.begin(), E.end());
-    
+
     int track_cnt = 0;
     for (int l = 0; l < n;)
     {
@@ -171,12 +212,12 @@ int main()
             max_offset = max(max_offset, it->offset);
             it++;
         }
-    
+
     MCRegion Region(x0, z0, y0,
-                    max_offset, track_cnt << 1, 5);
+                    max_offset, track_cnt << 1, 8);
 
     for (int i = 0; i < track_cnt; i++)
-        buildTrack(Region, i);
+        buildTrack(Region, i, i != track_cnt - 1);
     Region.x_len = max_len + 10;
 
     Editor.setRegion(Region);

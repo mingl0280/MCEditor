@@ -25,6 +25,8 @@ public:
 
     void insertBlockEntity(const Pos &position, BlockEntity* entity);
 
+    void setHeightMap(int x, int z, int y);
+
 private:
     NBTCoder nbt_coder;
     bool modification_saved;
